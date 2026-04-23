@@ -1,0 +1,36 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run smoke checks
+        run: npm run test:smoke
+
+      - name: Upload basic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-validation-report
+          path: |
+            playwright-report/
+            test-results/

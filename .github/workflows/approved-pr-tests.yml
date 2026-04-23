@@ -1,0 +1,60 @@
+name: Approved PR Tests
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  approved-tests:
+    if: github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run smoke
+        run: npm run test:smoke
+
+      - name: Run critical regression
+        run: npm run test:regression:critical
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+
+      - name: Comment PR with result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## Resultado da Validação de QA/IA
+
+            - Testes executados: smoke + regressão crítica
+            - Status: verifique os artifacts do workflow
+            - Evidências: relatório anexado ao job
+            - Próximo passo: validar falhas antes do merge, se houver`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body
+            });
