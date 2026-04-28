@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "lint": "echo lint-ok",
+    "install": "npx playwright install",
     "test:smoke": "npx playwright test tests/e2e/smoke.spec.ts",
     "test:regression:critical": "npx playwright test tests/e2e/"
   },
