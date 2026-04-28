@@ -1,0 +1,1 @@
+test(e2e): tornar smoke auto-contido para reduzir flakiness

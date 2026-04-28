@@ -17,5 +17,3 @@ test('home page loads', async ({ page }) => {
   `);
   await expect(page).toHaveTitle(/Example/);
 });
-
-// Atualizando
