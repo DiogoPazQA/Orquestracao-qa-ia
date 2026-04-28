@@ -7,7 +7,7 @@
     "test:smoke": "npx playwright test tests/e2e/smoke.spec.ts",
     "test:regression:critical": "npx playwright test tests/e2e/"
   },
-  "devDependencies": {
+  "dependencies": {
     "@playwright/test": "^1.54.0"
   }
 }
