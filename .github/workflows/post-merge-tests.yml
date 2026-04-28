@@ -18,6 +18,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: write
+      issues: write
 
     env:
       NODE_VERSION: '20'
@@ -49,9 +51,11 @@ jobs:
         run: npm run lint
 
       - name: Run smoke tests
+        id: smoke
         run: npm run test:smoke
 
       - name: Run critical regression
+        id: regression
         run: npm run test:regression:critical
 
       - name: Upload Playwright report
@@ -81,3 +85,34 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Evidências" >> $GITHUB_STEP_SUMMARY
           echo "- Artifacts publicados no workflow" >> $GITHUB_STEP_SUMMARY
+
+      - name: Claude Code executive summary and triage
+        if: always()
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Você está atuando como um orquestrador de QA/IA.
+
+            Contexto da execução:
+            - Repositório: ${{ github.repository }}
+            - Branch: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+            - Ator: ${{ github.actor }}
+
+            Resultado esperado:
+            1. Produza um resumo executivo curto da validação pós-merge.
+            2. Se houver sinais de falha, faça uma triagem inicial:
+               - falha funcional
+               - falha de teste
+               - falha de ambiente
+               - timeout
+               - dependência externa
+               - evidência insuficiente
+            3. Sugira o próximo passo recomendado.
+            4. Responda em português.
+            5. Não faça alterações no código.
+          claude_args: |
+            --append-system-prompt "Siga o CLAUDE.md do repositório. Seja objetivo, executivo e auditável."
+            --max-turns 6
+            --model claude-sonnet-4-6
