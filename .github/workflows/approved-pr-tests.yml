@@ -1,12 +1,12 @@
 name: Approved PR Tests
 
 on:
-  pull_request_review:
-    types: [submitted]
+  push:
+    branches:
+      - main
 
 jobs:
   approved-tests:
-    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
 
     permissions:
@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
       - name: Run smoke
         run: npm run test:smoke
 
@@ -39,22 +42,4 @@ jobs:
           path: |
             playwright-report/
             test-results/
-
-      - name: Comment PR with result
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = `## Resultado da Validação de QA/IA
-
-            - Testes executados: smoke + regressão crítica
-            - Status: verifique os artifacts do workflow
-            - Evidências: relatório anexado ao job
-            - Próximo passo: validar falhas antes do merge, se houver`;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body
-            });
+        continue-on-error: true
