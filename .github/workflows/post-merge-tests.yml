@@ -1,4 +1,4 @@
-name: Post Merge Tests
+name: QA/IA Post-Merge Validation
 
 on:
   push:
@@ -7,30 +7,46 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: post-merge-tests-${{ github.ref }}
+  group: qa-ia-post-merge-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  post-merge-tests:
+  validate-post-merge:
+    name: Validate merged change on main branch
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
+      actions: read
+
+    env:
+      NODE_VERSION: '20'
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Display execution context
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch: $GITHUB_REF"
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Commit: $GITHUB_SHA"
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
+
+      - name: Run lint
+        run: npm run lint
 
       - name: Run smoke tests
         run: npm run test:smoke
@@ -46,4 +62,22 @@ jobs:
           path: |
             playwright-report/
             test-results/
-        continue-on-error: true
+          if-no-files-found: warn
+
+      - name: Publish execution summary
+        if: always()
+        run: |
+          echo "## Resultado da Validação Pós-Merge de QA/IA" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Repositório: $GITHUB_REPOSITORY" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: $GITHUB_REF_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`$GITHUB_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Executor: $GITHUB_ACTOR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Etapas executadas" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint" >> $GITHUB_STEP_SUMMARY
+          echo "- Smoke tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Regressão crítica" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Evidências" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifacts publicados no workflow" >> $GITHUB_STEP_SUMMARY
